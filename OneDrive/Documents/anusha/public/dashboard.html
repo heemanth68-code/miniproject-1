@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Student Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f8f9fa; }
+        .navbar { background: #007bff; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .main-container { max-width: 1100px; margin: 30px auto; padding: 0 20px; display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        .card { background: white; padding: 20px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        h3 { border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; color: #333; }
+        .item-list { list-style: none; padding: 0; }
+        .item-list li { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .btn { padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 14px;}
+        .btn-success { background: #28a745; }
+        .btn-danger { background: #dc3545; }
+        #examPortal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: white; padding: 40px; box-sizing: border-box; overflow-y: auto; }
+        #timer { font-size: 20px; font-weight: bold; color: red; text-align: right; }
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        <h2 style="margin:0;">Welcome, <span id="studentName">Student</span></h2>
+        <button class="btn btn-danger" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="main-container" id="dashboardView">
+        <div>
+            <div class="card">
+                <h3>Available Exams & Previous Question Papers</h3>
+                <ul class="item-list" id="examList"></ul>
+            </div>
+        </div>
+
+        <div>
+            <div class="card">
+                <h3>Your Previous Results</h3>
+                <ul class="item-list" id="resultList"></ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="examPortal">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2 id="activeExamTitle">Exam Title</h2>
+            <div id="timer">Time Remaining: --:--</div>
+        </div>
+        <hr>
+        <div id="questionsContainer"></div>
+        <br>
+        <button class="btn btn-success" style="font-size:18px; padding:10px 20px;" onclick="submitExam()">Submit Examination</button>
+    </div>
+
+    <script>
+        const userId = localStorage.getItem('userId');
+        document.getElementById('studentName').innerText = localStorage.getItem('userName') || 'Student';
+
+        if (!userId) window.location.href = '/index.html';
+
+        let currentExamId = '';
+        let currentExamQuestions = [];
+        let timerInterval;
+
+        // Fetch everything on load
+        async function loadDashboardData() {
+            // 1. Fetch Exams / Past Papers
+            const examRes = await fetch('/api/exams');
+            const exams = await examRes.json();
+            const examList = document.getElementById('examList');
+            examList.innerHTML = '';
+            exams.forEach(exam => {
+                examList.innerHTML += `
+                    <li>
+                        <div>
+                            <strong>${exam.title}</strong> <span style="color:#666;">(${exam.subject})</span><br>
+                            <small>Questions: ${exam.questions.length} | Duration: ${exam.durationMinutes} mins</small>
+                        </div>
+                        <button class="btn" onclick="startExam('${exam._id}')">Take Test / View Paper</button>
+                    </li>`;
+            });
+
+            // 2. Fetch Previous Exam Performance
+            const resultRes = await fetch(`/api/student/${userId}/results`);
+            const results = await resultRes.json();
+            const resultList = document.getElementById('resultList');
+            resultList.innerHTML = '';
+            results.forEach(res => {
+                resultList.innerHTML += `
+                    <li>
+                        <div><strong>${res.examId.title}</strong></div>
+                        <div style="font-weight:bold; color:#28a745;">${res.score} / ${res.totalQuestions}</div>
+                    </li>`;
+            });
+        }
+
+        // Exam Execution Logic
+        async function startExam(examId) {
+            const res = await fetch(`/api/exams/${examId}`);
+            const exam = await res.json();
+            
+            currentExamId = examId;
+            currentExamQuestions = exam.questions;
+
+            document.getElementById('dashboardView').style.display = 'none';
+            document.getElementById('examPortal').style.display = 'block';
+            document.getElementById('activeExamTitle').innerText = `${exam.title} - ${exam.subject}`;
+
+            // Render Questions
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = '';
+            exam.questions.forEach((q, qIndex) => {
+                let optionsHtml = '';
+                q.options.forEach((opt, optIndex) => {
+                    optionsHtml += `
+                        <label style="display:block; margin:8px 0; cursor:pointer;">
+                            <input type="radio" name="q${qIndex}" value="${optIndex}"> ${opt}
+                        </label>`;
+                });
+                container.innerHTML += `
+                    <div style="margin-bottom:25px; padding:15px; border-left:4px solid #007bff; background:#fdfdfd;">
+                        <p style="font-weight:bold; margin-top:0;">Q${qIndex + 1}: ${q.questionText}</p>
+                        ${optionsHtml}
+                    </div>`;
+            });
+
+            // Countdown Timer setup
+            let timeRemaining = exam.durationMinutes * 60;
+            timerInterval = setInterval(() => {
+                let mins = Math.floor(timeRemaining / 60);
+                let secs = timeRemaining % 60;
+                document.getElementById('timer').innerText = `Time Remaining: ${mins}:${secs < 10 ? '0' : ''}${secs}`;
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    alert("Time's up! Submitting automatically.");
+                    submitExam();
+                }
+                timeRemaining--;
+            }, 1000);
+        }
+
+        async function submitExam() {
+            clearInterval(timerInterval);
+            const answers = [];
+            currentExamQuestions.forEach((_, index) => {
+                const selected = document.querySelector(`input[name="q${index}"]:checked`);
+                answers.push(selected ? parseInt(selected.value) : null);
+            });
+
+            const res = await fetch('/api/exams/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, examId: currentExamId, answers })
+            });
+            const data = await res.json();
+            alert(`Exam Submitted! You scored: ${data.score} out of ${data.total}`);
+            
+            // Return to dashboard
+            document.getElementById('examPortal').style.display = 'none';
+            document.getElementById('dashboardView').style.display = 'grid';
+            loadDashboardData();
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/index.html';
+        }
+
+        loadDashboardData();
+    </script>
+</body>
+</html>
