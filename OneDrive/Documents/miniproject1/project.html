@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Management Dashboard</title>
+    <style>
+        /* Minimal layout CSS to make the medium HTML structure readable and beautiful */
+        body { font-family: system-ui, sans-serif; margin: 0; display: flex; height: 100vh; background: #f4f6f9; }
+        aside { width: 240px; background: #1e293b; color: white; padding: 20px; }
+        aside nav a { display: block; color: #cbd5e1; padding: 10px; text-decoration: none; border-radius: 4px; margin-bottom: 5px; }
+        aside nav a.active { background: #3b82f6; color: white; }
+        main { flex: 1; padding: 40px; overflow-y: auto; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background: #f8fafc; color: #64748b; }
+        .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.85em; font-weight: bold; }
+        .badge.done { background: #dcfce7; color: #15803d; }
+        .badge.progress { background: #dbeafe; color: #1d4ed8; }
+        dialog { border: none; border-radius: 8px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: 400px; }
+        dialog::backdrop { background: rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+
+    <aside>
+        <h2>DevPortal</h2>
+        <nav>
+            <a href="#" class="active">📊 Dashboard</a>
+            <a href="#">📁 Projects</a>
+            <a href="#">👥 Team Members</a>
+            <a href="#">⚙️ Settings</a>
+        </nav>
+    </aside>
+
+    <main>
+        <header>
+            <div>
+                <h1>Project Overview</h1>
+                <p>Welcome back, Team Lead</p>
+            </div>
+            <button onclick="document.getElementById('taskModal').showModal()" style="padding: 10px 15px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                + New Project
+            </button>
+        </header>
+
+        <section class="stats-grid">
+            <article class="card">
+                <h3>Active Projects</h3>
+                <p style="font-size: 24px; font-weight: bold; margin: 5px 0;">12</p>
+            </article>
+            <article class="card">
+                <h3>Completed Tasks</h3>
+                <p style="font-size: 24px; font-weight: bold; margin: 5px 0;">48 / 60</p>
+            </article>
+            <article class="card">
+                <h3>Team Efficiency</h3>
+                <p style="font-size: 24px; font-weight: bold; margin: 5px 0;">94%</p>
+                <progress value="94" max="100" style="width: 100%;"></progress>
+            </article>
+        </section>
+
+        <section class="card" style="padding: 0;">
+            <h2 style="padding: 20px 20px 0 20px; margin-bottom: 10px;">Recent Project Deployments</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Project Name</th>
+                        <th>Framework</th>
+                        <th>Date Created</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>E-Commerce Redesign</strong></td>
+                        <td>React / Node.js</td>
+                        <td><time datetime="2026-05-12">May 12, 2026</time></td>
+                        <td><span class="badge done">Completed</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Mobile Banking App</strong></td>
+                        <td>Flutter / Firebase</td>
+                        <td><time datetime="2026-06-01">June 01, 2026</time></td>
+                        <td><span class="badge progress">In Progress</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>AI Analytics Dashboard</strong></td>
+                        <td>Next.js / Python</td>
+                        <td><time datetime="2026-06-20">June 20, 2026</time></td>
+                        <td><span class="badge progress">In Progress</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card" style="margin-top: 30px;">
+            <h2>System Updates & Documentation</h2>
+            <details style="margin-bottom: 10px; padding: 10px; background: #f8fafc; border-radius: 4px;">
+                <summary style="font-weight: bold; cursor: pointer;">Version 2.4.0 Release Notes</summary>
+                <p style="margin-top: 10px; color: #475569;">We have updated the server pipelines, compressed asset delivery speeds by 24%, and fixed table sorting anomalies on mobile web viewports.</p>
+            </details>
+            <details style="padding: 10px; background: #f8fafc; border-radius: 4px;">
+                <summary style="font-weight: bold; cursor: pointer;">Deployment Pipeline Instructions</summary>
+                <p style="margin-top: 10px; color: #475569;">Ensure all production-ready branches run automated testing environments using `npm run test` before trying to execute push actions to production branches.</p>
+            </details>
+        </section>
+    </main>
+
+    <dialog id="taskModal">
+        <h3>Create New Project</h3>
+        <form method="dialog">
+            <p>
+                <label for="projName">Project Title:</label><br>
+                <input type="text" id="projName" placeholder="e.g., Crypto Wallet UI" required style="width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box;">
+            </p>
+            <p>
+                <label for="category">Category:</label><br>
+                <select id="category" style="width: 100%; padding: 8px; margin-top: 5px;">
+                    <option value="frontend">Frontend Application</option>
+                    <option value="backend">Backend Service</option>
+                    <option value="fullstack">Fullstack System</option>
+                </select>
+            </p>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button type="button" onclick="document.getElementById('taskModal').close()" style="padding: 8px 12px; background: #cbd5e1; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+                <button type="submit" style="padding: 8px 12px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer;">Submit Project</button>
+            </div>
+        </form>
+    </dialog>
+
+</body>
+</html>
